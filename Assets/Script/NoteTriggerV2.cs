@@ -67,11 +67,8 @@ public class NoteTriggerV2 : MonoBehaviour
         yield return null;
     }
     public IEnumerator Note1Off()
-    {
-        Debug.Log("NoteOff");
-        
+    {       
         MidiOut.SendNoteOff(channel, noteNumber);
-        Debug.Log("Note1Off__OK");
         yield return null;
     }
 

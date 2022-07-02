@@ -29,7 +29,7 @@ public class SPT_EventTrigV2 : MonoBehaviour
     public GameObject MidiTouch01;
     public GameObject MidiTouch02;
     public GameObject MidiTouch03;
-    public GameObject MidiTouch04;
+   // public GameObject MidiTouch04;
     // public GameObject MidiTouch05;
     public GameObject MidiTouchSound;
    // public GameObject SphereDebug;
@@ -182,7 +182,7 @@ public class SPT_EventTrigV2 : MonoBehaviour
             }
             t1++;
             Touch_1 = true;
-            Debug.Log("Touch1");
+           // Debug.Log("Touch1");
         }
          ////////// Event Midi trig Gate TOUCH CONTINU
         public void Touch2()
@@ -193,7 +193,7 @@ public class SPT_EventTrigV2 : MonoBehaviour
             }
         Touch_1Continue = true;
             t2++;
-        Debug.Log("Touch12");
+       // Debug.Log("Touch12");
     }
 
         ////////// Event Midi trig Gate TOUCH2
@@ -205,7 +205,7 @@ public class SPT_EventTrigV2 : MonoBehaviour
             }
             Touch02 = true;
             t3++;
-           Debug.Log("Touch3");
+          // Debug.Log("Touch3");
         }
 
         public void SonRouge()
