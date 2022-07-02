@@ -1,0 +1,122 @@
+﻿#pragma kernel CSMain
+
+Texture2D<float4> reader; 
+RWTexture2D<float4> writer;
+SamplerState _LinearClamp;
+float _r2;
+float _r1;
+float _p2;
+float _p1;
+float _b1;
+float _b2;
+float _b3;
+float _time;
+
+float rand (float2 uv ) {return frac ( sin ( dot ( floor(uv),float2(94.25,43.14)))*4587.236+_time*0.1);}
+float noise ( float2 uv) {
+float a = rand(uv);
+float b = rand (uv+float2(1,0));
+ float c  = rand (uv+float2(0,1));
+ float d  = rand ( uv+float2(1,1));
+float2 u =smoothstep(0.,1.,frac(uv));
+return lerp (a,b,u.x)+(c-a)*u.y*(1.-u.x)+(d-b)*u.x*u.y;
+}
+float fmb ( float2 uv) {
+float val = 0.;
+float amp = 0.5;
+float frec = 0.;
+for (int i =0; i<6; i++){
+//val += smoothstep(0.1,0.029,amp* abs((noise (uv)-0.5)*2.));
+//uv*=1.2;
+//uv+=48.78;
+val += amp*noise(uv);
+uv*=2.;
+amp*=.5;
+}
+return val;
+}
+float2 rnd2(float2 x) {  
+return sign(frac(3458.365*sin((x+_time)*float2(45.212,-94.23)))*4.-2.);}
+float rnd(float x ) {  return sign(frac(3458.365*sin(x))*2.-1.);}
+float rndb(float x ) {  return sign(frac(3458.365*sin(x))*2.-1.2);}
+float rndc(float x ) {  return sign(frac(3458.365*sin(x))*2.-1.4);}
+[numthreads(8,8,1)]
+void CSMain (uint2 id : SV_DispatchThreadID) 
+{
+	
+	float2 f = float2(id.x,id.y);
+	float2 resolution=float2(_r1,_r2);
+	float2 uv = f/resolution.xy;
+    float rt = resolution.x/resolution.y;
+	float2 uv2 = uv;
+    uv2.x *= rt;
+	float2 uv3 = uv*2.-1.;
+	float a = abs(atan2(uv3.y,uv3.x)*2.);
+	float2 ba = float2(a,distance(uv3,float2(0.,0.)));
+	float fm = fmb(ba*10.+float2(0.,_time*-4.));
+	float m = smoothstep(0.5,0.6,fm);
+	float m2 = smoothstep(0.55,0.65,fm);
+	float m3 = smoothstep(0.6,0.7,fm);
+    float fpt = step(distance(uv2,float2(_p1/_r1*rt,_p2/_r2)),1./resolution.x);
+    float3 b = max(fpt ,reader.SampleLevel(_LinearClamp,uv+float2(0.5,0.5)/resolution,0).xyz);
+    float3 T = 0.;
+    float map = smoothstep(0.,0.5,fmb(uv2*40.));
+    for (int j=-1; j<=1; j++)
+        for (int i=-1; i<=1; i++) {
+    float2 d = float2(i,j);
+    float3 T = reader.SampleLevel(_LinearClamp,frac((float2(id.x,id.y)+d)/resolution)+float2(0.5,0.5)/resolution,0).xyz;
+    if (T.x==1.&& rnd((id.x*resolution.x+d.x+_time)*45.236)==-d.y && rnd((id.y*resolution.y+d.y+_time)*-92.265)==-d.x){	
+	b.x = max(b.x,T.x*m) ;}
+	if (T.y==1.&& rndb((id.x*resolution.x+d.x+_time)*-12.254)==-d.y && rndb((id.y*resolution.y+d.y+_time)*74.51)==-d.x && b.x==1.){	
+	b.y = max(b.y,T.y*m2) ;}
+	if (T.z==1.&& rndc((id.x*resolution.x+d.x+_time)*-66.295)==-d.y && rndc((id.y*resolution.y+d.y+_time)*84.26)==-d.x && b.x==1.&& b.y==1.){	
+	b.z = max(b.z,T.z*m3) ;}
+    
+    }
+	
+	float3 fi =b;
+	float2 tuv =  uv - .5 ;
+			float2 dTuv = tuv*_b1/24.;
+			float3 col = reader.SampleLevel(_LinearClamp,uv,0).xyz;
+			uv += dTuv;
+			float wa = _b2;
+			for(float ko=0.; ko < 40.; ko++){   
+				 uv -= dTuv;
+				 col +=reader.SampleLevel(_LinearClamp,uv,0).xzy * wa;
+				wa *=_b3;      
+				 }
+				
+			
+			float fa =(col.x+col.y+col.y)/3.; 
+	writer[id] = float4 (fi,fa);
+	
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*float3 diff = float3( float2(1.0,1.0) / resolution, 0.0);
+	float2 center = reader.SampleLevel(_LinearClamp,uv+float2(0.5,0.5)/resolution,0).gb;
+    float top = reader.SampleLevel(_LinearClamp,uv+float2(0.5,0.5)/resolution - diff.zy,0).g;
+    float left = reader.SampleLevel(_LinearClamp,uv+float2(0.5,0.5)/resolution - diff.xz,0).g;
+    float right = reader.SampleLevel(_LinearClamp,uv+float2(0.5,0.5)/resolution + diff.xz,0).g;
+    float bottom = reader.SampleLevel(_LinearClamp,uv+float2(0.5,0.5)/resolution + diff.zy,0).g;
+
+	float red = -(center.g - 0.5) * 2.0 + (top + left + right + bottom - 2.0);
+    red += b; 
+    red *= 0.99; 
+    red *= step(0.1, _time); 
+    red = 0.5 + red * 0.5;
+    //red = clamp(red, 0., 1.);
+    writer[id] = float4 (fi,red,center.r*2.,1.);*/

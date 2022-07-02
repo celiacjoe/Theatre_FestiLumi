@@ -1,0 +1,15 @@
+﻿
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+Texture2D<float4> reader; 
+SamplerState _LinearClamp;
+RWTexture2D<float4> result;
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+	float c = reader.SampleLevel(_LinearClamp,float2(0.,0.),0.).x;
+	result[id.xy] = float4(0.8,0.6,0.5,0.1);
+}

@@ -1,0 +1,74 @@
+﻿#pragma kernel CSMain
+
+Texture2D<float4> reader; 
+RWTexture2D<float4> writer;
+Texture2D<float4> reader2; 
+Texture2D<float4> reader3; 
+RWTexture2D<float4> writer3;
+SamplerState _LinearClamp;
+float _time;
+float _c1;
+float _c2;
+float _r1;
+float _r2;
+float rd (float t) {return frac(sin(dot(floor(t),12.45))*4597.268);}
+float no (float t) {return lerp(rd(t),rd(t+1.0),smoothstep(0.,1.,frac(t)));}
+float Gaussian (float sigma, float x)
+			{
+			return exp(-(x*x) / (2.0 * sigma*sigma));
+			}
+float rand (float2 uv ) {return frac ( sin ( dot ( floor(uv),float2(94.25,43.14)))*4587.236+_time);}
+float noise ( float2 uv) {
+float a = rand(uv);
+float b = rand (uv+float2(1,0));
+ float c  = rand (uv+float2(0,1));
+ float d  = rand ( uv+float2(1,1));
+float2 u =smoothstep(0.,1.,frac(uv));
+return lerp (a,b,u.x)+(c-a)*u.y*(1.-u.x)+(d-b)*u.x*u.y;
+}
+float fmb ( float2 uv) {
+float val = 0.;
+float amp = 0.5;
+float frec = 0.;
+for (int i =0; i<6; i++){
+val += amp* noise (uv);
+uv*=2.;
+amp*=.5;
+}
+return val;
+}
+
+[numthreads(8,8,1)]
+void CSMain (uint2 id : SV_DispatchThreadID) 
+{
+	
+	float2 f = float2(id.x,id.y);
+	float2 r = float2(_r1,_r2);
+	float2 uv = f/r;
+	float3 v = reader2.SampleLevel(_LinearClamp,uv,0).xyz;
+
+			float2 duv = (-uv +0.5)*0.008*pow(no(_time*4.),4.);
+			float3 dp = 0.;
+			float2 uv2 = uv;
+			for ( int k= 0; k < 64; k++ )
+			{		
+				float depth = (float(k)  ) / 64.; 
+				uv2 -= duv ;		        
+				dp = reader2.SampleLevel(_LinearClamp, uv2+duv*64.,0).xyz;
+				if ( 1.-dot(dp.x, 1.) < depth) break;
+
+			}
+			float2 sy = lerp(uv,1.-uv,step(0.5,uv));
+			float2 sy2 = float2(lerp(uv.x,1.-uv.x,step(0.5,uv.x)),uv.y);
+			float3 df = reader2.SampleLevel(_LinearClamp, lerp(sy,sy2,step(0.5,rd(_time*10.))),0).xyz;
+			float3 ek1 = reader2.SampleLevel(_LinearClamp, uv,0).xyz; 
+			float2 dek = float2(0.1,0.)*smoothstep(0.3,0.5+no(_time*10.),distance(uv,0.5))*fmb(uv*10.);
+			float3 ek2 = float3(reader2.SampleLevel(_LinearClamp, uv+dek,0).x,reader2.SampleLevel(_LinearClamp, uv,0).y,
+			reader2.SampleLevel(_LinearClamp, uv-dek,0).z);
+			float ch = rd (_time);
+			float3 fin1 = lerp(lerp(lerp(v,dp,step(0.4,ch)),df,step(0.5,ch)),ek2,step(0.9,ch));
+
+			writer[id]=float4(fin1,1.);
+			//writer3[id]=float4(m,b1,b4,li2);
+	
+}

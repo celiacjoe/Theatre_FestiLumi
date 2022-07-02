@@ -1,0 +1,101 @@
+﻿#pragma kernel CSMain
+
+Texture2D<float4> reader; 
+Texture2D<float4> reader2; 
+RWTexture2D<float4> writer;
+SamplerState _LinearClamp;
+float _r2;
+float _r1;
+float _p3;
+float _p2;
+float _p1;
+float _c1;
+float _c2;
+float _c3;
+float _c4;
+float _time;
+float _lh;
+float _lb;
+float _lg;
+float _ld;
+float _maxdist;
+float map(float value, float min1, float max1, float min2, float max2) {
+			return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+			}
+float rd (float t) {return frac(sin(dot(floor(t),12.45))*4597.268);}
+float no (float t) {return lerp(rd(t),rd(t+1.0),smoothstep(0.,1.,frac(t)));}
+
+			float2 map2(float2 value, float2 min1, float2 max1, float2 min2, float2 max2) {
+			return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+			}
+[numthreads(8,8,1)]
+void CSMain (uint2 id : SV_DispatchThreadID) 
+{
+	
+	float2 f = float2(id.x,id.y);
+	/**/
+	float vo1 = _p1;
+	float vo2 = _p2;
+	//float vo1 = no(_time*2.+785.236);
+	//float vo2 = no(_time*2.+164.666);
+	/**/
+	float2 tr = float2(lerp(0.4,0.5,abs((vo1-0.5)*2.))*lerp(-1.,1.,step(0.5,vo1)),lerp(1.,0.85,abs((vo2-0.5)*2.)));
+	float2 b = tr;
+	float2 iResolution=float2(_r1,_r2); //texture resolution
+	float2 uv = f/iResolution;
+	float2 uv3 = map2(uv, float2(0.,0.),float2(1.,1.),float2(1.-_lg,1.-_lh),float2(1.-_ld,1.-_lb));
+	//uv.x *= iResolution.x/iResolution.y;
+	float2 v = float2(0.0,0.0);
+	float4 c = float4(0,0,0,1);   //initial color
+	for(int l=0;l<8;l++)
+	{
+		if ( dot(b,b) > pow(iResolution.y,2.0) ) break;
+		float2 p = b;
+		for(int i=0;i<5;i++)
+		{          
+			float2 pos = f+p; 
+			float rot=0.0;
+			for(int i=0;i<5;i++)
+			{
+				rot+=dot(reader.SampleLevel(_LinearClamp,float2(frac((pos+p)/iResolution.xy)),0).a-float2(0.5,0.5),float2(-1.,1.)*p.yx);
+				p=float2(tr.x*p.x+tr.y*p.y,-tr.y*p.x+tr.x*p.y); 
+			}
+			v+=p.yx* rot/5.0/dot(b,b);      
+			p=float2(tr.x*p.x+tr.y*p.y,-tr.y*p.x+tr.x*p.y);
+		}
+		b*=2.0;
+	}   
+	float co=reader.SampleLevel(_LinearClamp,frac((f+v*float2((no(_time+81.36)-0.5)*4.,(no(_time+43.65)-0.5)*-4.))/iResolution.xy),0).a; 
+	float fac = map (_p3, _maxdist-12., _maxdist,1.,0.);
+	float mt = lerp (_c1,_c2,fac);
+	float m1 = min(reader.SampleLevel(_LinearClamp,float2(0.25,0.33),0).a,reader.SampleLevel(_LinearClamp,float2(0.25,0.66),0).a);
+	float m2 = min(reader.SampleLevel(_LinearClamp,float2(0.5,0.33),0).a,reader.SampleLevel(_LinearClamp,float2(0.5,0.66),0).a);
+	float m3 = min(reader.SampleLevel(_LinearClamp,float2(0.75,0.33),0).a,reader.SampleLevel(_LinearClamp,float2(0.75,0.66),0).a);
+	float con = step(0.5,min(min(m1,m2),m3));
+
+	/**/
+	//co += smoothstep(0.1,0.,distance(uv,float2(vo1 ,vo2 )))*no(_time+69.23)*lerp(1.,-1.,con);
+	co +=  smoothstep(mt,mt-_c3, reader2.SampleLevel(_LinearClamp, 1.-uv3,0).x)*lerp(1.,-1.,con)*smoothstep(_maxdist, _maxdist-1.,_p3);
+	/**/
+
+	float delta = 0.001;
+	float2 texcoord = f/iResolution;
+    float2 tuv = (-texcoord +0.5)*0.01*0.5;
+	float c1 = 0.;
+	//float jitter = frac(sin(dot(texcoord, float2(41.97, 289.13)))*43758.5453);
+    float2 uv2 = texcoord;
+	float2 mousepo = float2(0.,0.7);
+	for ( int i = 0; i < 64; i++ )
+	{		
+		float depth = (float(i) ) / 64.; 
+        uv2 -= tuv ;		        
+		c1 = reader.SampleLevel(_LinearClamp, uv2+tuv*64.,0).a;
+		if ( 1.-dot(c1, 1.) < depth) break;
+
+	}
+	//float te = smoothstep(mt,mt-_c3, reader2.SampleLevel(_LinearClamp, 1.-uv3,0).x);
+	//writer[id]=float4(te,te,te,te);
+	writer[id]=float4(c1,c1,c1,co);
+}
+
+

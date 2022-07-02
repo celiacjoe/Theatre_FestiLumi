@@ -1,0 +1,17 @@
+﻿#pragma kernel CSMain
+
+//Texture2D<float4> reader; 
+RWTexture2D<float4> writer;
+SamplerState _LinearClamp;
+
+
+[numthreads(8,8,1)]
+void CSMain (uint2 id : SV_DispatchThreadID) 
+{
+	
+
+			float4 test =float4(1.,0.,0.,1.);
+	writer[id] = test;
+	
+}
+
