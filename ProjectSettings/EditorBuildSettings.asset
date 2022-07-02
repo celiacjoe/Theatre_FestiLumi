@@ -11,7 +11,10 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/Scene_Test.unity
     guid: 80bc70b70ea750c4493a3a76d3e98166
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/SCN_JustKlak 1.unity
     guid: b9033dc8a2e5f06468922eca542da1dc
+  - enabled: 1
+    path: Assets/Scenes/SCN_Test.unity
+    guid: 07479714061cc074194839e31581c521
   m_configObjects: {}

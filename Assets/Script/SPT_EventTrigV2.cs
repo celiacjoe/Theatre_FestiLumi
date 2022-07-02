@@ -87,8 +87,8 @@ public class SPT_EventTrigV2 : MonoBehaviour
         if (Touch_1 == true)
         {
             MidiTouch01.GetComponent<NoteTriggerV2>().SendCC = true;               
-            MidiTouch01.GetComponent<NoteTriggerV2>().value = map(Touch1PosX, 0.0f, 1f, 20f, 100f);
-            MidiTouch02.GetComponent<NoteTriggerV2>().value = map(Touch1PosY, 0.0f, 1f, 60f, 80f);
+            MidiTouch01.GetComponent<NoteTriggerV2>().value = map(Touch1PosX, 0.0f, 1f, 60f, 80f);
+            MidiTouch02.GetComponent<NoteTriggerV2>().value = map(Touch1PosY, 0.0f, 1f, 20f, 100f);
            // MidiTouch02.GetComponent<NoteTriggerV2>().value = map(Touch1PosY, 0.0f, 1f, 60f, 85f);
             Touch_1Continue = true;
         }else
